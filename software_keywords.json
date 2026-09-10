@@ -1,0 +1,8 @@
+{
+  "languages": ["Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Ruby", "SQL"],
+  "frameworks": ["React", "Next.js", "Angular", "Vue.js", "Spring Boot", "Django", "Node.js"],
+  "databases": ["PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch"],
+  "infra": ["AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform", "GitOps"],
+  "testing": ["Jest", "JUnit", "PyTest", "Cypress", "TDD"],
+  "practices": ["Microservices Architecture", "Distributed Systems", "Event-Driven", "CI/CD", "Code Reviews"]
+}
