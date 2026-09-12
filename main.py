@@ -17,7 +17,7 @@ import html
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-BOARD_TOKENS = ["stripe"]  
+BOARD_TOKENS = ["stripe", "meta"]  
 
 def fetch_company_jobs(token) -> list[dict]:
     url = f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs"
@@ -37,13 +37,9 @@ def build_patterns(keywords: dict[str, list[str]]) -> dict[str, re.Pattern]:
     patterns = {}
     for category, terms in keywords.items():
         for term in terms:
-            # re.escape handles C++, C#, TDD (Test-Driven Development), etc. —
-            # without it, "C++" becomes an invalid/wrong regex since + is a quantifier
+    
             escaped = re.escape(term)
-            # \b word boundaries don't work cleanly around C++ or C# because
-            # \b is defined relative to \w characters, and + and # aren't \w.
-            # For terms ending/starting in non-word chars, drop the boundary
-            # on that side rather than getting a pattern that never matches.
+     
             left = r'\b' if term[0].isalnum() else ''
             right = r'\b' if term[-1].isalnum() else ''
             pattern = re.compile(f'{left}{escaped}{right}', re.IGNORECASE)
@@ -133,6 +129,7 @@ if __name__ == "__main__":
                     found = match_keywords(all, patterns)
                     print(found)
                     filtered.append(job)
+
 
         all_jobs.extend(jobs)
         time.sleep(0.5) 
