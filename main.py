@@ -14,6 +14,13 @@ from bs4 import BeautifulSoup
 import re
 import json
 import html
+import os 
+
+utilities_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utilities"))
+sys.path.append(utilities_path)
+
+from postgres.write_to_table import write_to_tables
+# import write_to_table
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
@@ -77,7 +84,7 @@ def stripe_datetime(s): #Convert All Datetimes into '%Y-%m-%d'
     datetime_obj = datetime.strptime(correct_datetime, date_format)
     return datetime_obj
 
-def date_in_range(input_date, start = date(2026, 6, 6), end = date.today()):
+def date_in_range(input_date, start = date(2026, 9, 20), end = date.today()):
     # print(type(input_date), type(start), type(end)) #input date is a datetime.datetime, everything else is a datetime.date
     if input_date.date() >= start and input_date.date() <= end:
         return True
@@ -114,12 +121,11 @@ def parse_html(content: str | None) -> str:
 patterns = build_patterns(load_keywords())
 all_jobs = []
 filtered = []
-if __name__ == "__main__":
+
+def find_job():
     for token in BOARD_TOKENS:
         jobs = fetch_company_jobs(token)
-
         for job in jobs:
-            
             if is_swe_title(job['title']):
                 datetime_obj = stripe_datetime(job['first_published'])
                 job["_company_token"] = token
@@ -129,8 +135,15 @@ if __name__ == "__main__":
                     found = match_keywords(all, patterns)
                     print(found)
                     filtered.append(job)
+                    print('??')
+                    return -1
+                
 
 
         all_jobs.extend(jobs)
         time.sleep(0.5) 
+
+
+find_job()
+
     
