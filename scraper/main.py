@@ -15,11 +15,19 @@ import re
 import json
 import html
 import os 
+import psycopg2
+import os 
+from dotenv import load_dotenv
 
-utilities_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "utilities"))
-sys.path.append(utilities_path)
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
+from pathlib import Path 
+working_dir = str(Path(__file__).resolve().parent.parent)
+sys.path.append(working_dir)
 
 from postgres.write_to_table import write_to_tables
+
+
 # import write_to_table
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -118,10 +126,28 @@ def parse_html(content: str | None) -> str:
     soup = BeautifulSoup(real_html, "html.parser")
     return soup.get_text(separator=" ", strip=True)
 
+def get_information(job):
+    id = job['id']
+    company = job['company_name']
+    title = job['title']
+    job_category = 'Software Engineering'
+    date_posted = job['first_published']
+    scraped_at = date.today()
+    url = job['absolute_url']
+    
+    category = 'Software Engineering'
+    
+    yap, desc, min, pref, all = filter_content(job['content'])
+    found = match_keywords(all, patterns)
+
+    keywords = found
+    return (id, company, title, job_category, date_posted, scraped_at, url, keywords, category)
+
 patterns = build_patterns(load_keywords())
 all_jobs = []
 filtered = []
 
+conn = psycopg2.connect(DATABASE_URL)
 def find_job():
     for token in BOARD_TOKENS:
         jobs = fetch_company_jobs(token)
@@ -130,13 +156,15 @@ def find_job():
                 datetime_obj = stripe_datetime(job['first_published'])
                 job["_company_token"] = token
                 if date_in_range(datetime_obj):
-                    print("I found a job", job['title'], job['first_published'], job['application_deadline'])
-                    yap, desc, min, pref, all = filter_content(job['content'])
-                    found = match_keywords(all, patterns)
-                    print(found)
-                    filtered.append(job)
-                    print('??')
-                    return -1
+                    
+                    
+                    (id, company, title, job_category, date_posted, scraped_at, url, keywords, category) = get_information(job)
+                
+                    try: 
+                        write_to_tables(conn, id, company, title, job_category, date_posted, scraped_at, url, keywords, category)
+                    
+                    finally:
+                        conn.close()
                 
 
 

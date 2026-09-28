@@ -1,41 +1,49 @@
 import os
 import psycopg2
+from psycopg2.extras import execute_values
 from dotenv import load_dotenv
 
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-def write_to_jobs_table(id, company, title, job_category, date_posted, scraped_at, url):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
 
-    insert_query = "INSERT INTO jobs (id, company, title, job_category, date_posted, scraped_at, url) values (%s, %s, %s, %s, %s, %s, %s); "
-    data_to_insert = (id, company, title, job_category, date_posted, scraped_at, url)
+def get_connection():
+    return psycopg2.connect(DATABASE_URL)
 
-    cursor.execute(insert_query, data_to_insert)
 
-    conn.commit()
+def write_to_jobs_table(cursor, job_id, company, title, job_category,
+                        date_posted, scraped_at, url):
+    
+    cursor.execute("""
+        INSERT INTO jobs (id, company, title, job_category, date_posted, scraped_at, url)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (id) DO NOTHING
+        RETURNING id
+    """, (job_id, company, title, job_category, date_posted, scraped_at, url))
+    return cursor.fetchone() is not None
 
-    cursor.close()
-    conn.close()
 
-def write_to_job_keywords_table(job_id, keyword, category):
-    conn = psycopg2.connect(DATABASE_URL)
-    cursor = conn.cursor()
+def write_to_job_keywords_table(cursor, job_id, keyword_pairs):
+   
+    rows = [(job_id, kw, cat) for kw, cat in keyword_pairs]
+    if not rows:
+        return
+    execute_values(cursor, """
+        INSERT INTO job_keywords (job_id, keyword, category)
+        VALUES %s
+        ON CONFLICT DO NOTHING
+    """, rows)
 
-    insert_query = "INSERT INTO job_keywords (job_id, keyword, category) values (%s, %s, %s)"
-    data_to_insert = (job_id, keyword, category)
-    cursor.execute(insert_query, data_to_insert)
-    conn.commit()
-    cursor.close()
-    conn.close()
 
-def write_to_tables(id, company, title, job_category, date_posted, scraped_at, url, keywords, category):
-
-    write_to_jobs_table(id, company, title, job_category, date_posted, scraped_at, url)
-    for keyword in keywords:
-        write_to_job_keywords_table(id, keyword, category)
-
+def write_to_tables(conn, job_id, company, title, job_category,
+                    date_posted, scraped_at, url, keyword_pairs):
 
     
-
+    with conn:                          
+        with conn.cursor() as cursor:   
+            is_new = write_to_jobs_table(cursor, job_id, company, title,
+                                         job_category, date_posted, scraped_at, url)
+            if not is_new:
+                return False
+            write_to_job_keywords_table(cursor, job_id, keyword_pairs)
+    return True
