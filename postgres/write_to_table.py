@@ -47,3 +47,37 @@ def write_to_tables(conn, job_id, company, title, job_category,
                 return False
             write_to_job_keywords_table(cursor, job_id, keyword_pairs)
     return True
+
+def clean_tables():
+    conn = psycopg2.connect(DATABASE_URL)
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute("DELETE FROM job_keywords WHERE job_id > 0")
+            cursor.execute("DELETE FROM jobs WHERE id > 0;")
+            
+
+            conn.commit()
+
+            
+    cursor.close()
+    conn.close()
+
+def check_table_data():
+    conn = psycopg2.connect(DATABASE_URL)
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT * FROM jobs")
+            rows = cursor.fetchall()
+            print("This is rows in jobs", rows)
+
+            cursor.execute("SELECT * FROM job_keywords")
+            rows = cursor.fetchall()
+            print("\nThis is rows in job_keywords", rows)
+
+    conn.close()
+
+check_table_data()
+
+
+
+
