@@ -66,17 +66,20 @@ def check_table_data():
     conn = psycopg2.connect(DATABASE_URL)
     with conn:
         with conn.cursor() as cursor:
-            cursor.execute("SELECT * FROM jobs")
+            cursor.execute("SELECT COUNT(*) FROM jobs")
             rows = cursor.fetchall()
             print("This is rows in jobs", rows)
 
-            cursor.execute("SELECT * FROM job_keywords")
+            cursor.execute("SELECT COUNT(*) FROM job_keywords")
             rows = cursor.fetchall()
             print("\nThis is rows in job_keywords", rows)
 
     conn.close()
 
-check_table_data()
+if __name__ == "__main__":
+    check_table_data()
+
+
 
 
 

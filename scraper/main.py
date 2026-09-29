@@ -20,7 +20,8 @@ from postgres.write_to_table import get_connection, write_to_tables
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-BOARD_TOKENS = ["stripe"]
+BOARD_TOKENS = ["stripe", "airbnb", "figma", "discord", "robinhood", "coinbase",
+              "databricks", "datadog", "reddit"]
 KEYWORDS_PATH = Path(__file__).resolve().parent / "software_keywords.json"
 JOB_CATEGORY = "Software Engineering"
 
