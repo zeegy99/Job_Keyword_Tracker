@@ -4,10 +4,13 @@
 
 import html
 import json
+import os
 import re
+import smtplib
 import sys
 import time
 from datetime import date
+from email.message import EmailMessage
 from pathlib import Path
 
 import requests
@@ -33,6 +36,26 @@ SWE_PATTERNS = [
     re.compile(r"\bbackend\s+engineer", re.IGNORECASE),
     re.compile(r"\bfrontend\s+engineer", re.IGNORECASE),
 ]
+
+# ---------- new grad filter ----------
+
+MAX_YEARS_EXPERIENCE = 1
+
+NEW_GRAD_PATTERN = re.compile(
+    r"\bnew\s+grad|\brecent\s+grad|\buniversity\s+grad|\bearly[\s-]career\b"
+    r"|\bentry[\s-]level\b|\bjunior\b|\bengineer\s+I\b(?!I)",
+    re.IGNORECASE,
+)
+EXCLUDE_TITLE_PATTERN = re.compile(
+    r"\b(senior|sr\.?|staff|principal|lead|manager|director|architect|intern|internship)\b"
+    r"|\bengineer\s+(II|III|IV)\b",
+    re.IGNORECASE,
+)
+# "3+ years of experience", "0-2 years of professional experience", "5 years experience"
+YEARS_PATTERN = re.compile(
+    r"(\d{1,2})\s*(?:\+|plus)?\s*(?:(?:-|–|to)\s*\d{1,2}\s*)?\+?\s*years?\s+(?:of\s+)?(?:[\w-]+\s+){0,3}experience",
+    re.IGNORECASE,
+)
 
 
 # ---------- fetching ----------
@@ -79,6 +102,22 @@ def is_swe_title(title: str) -> bool:
     return any(p.search(title) for p in SWE_PATTERNS)
 
 
+def min_years_required(text: str) -> int | None:
+    """Smallest 'N years of experience' mentioned, or None if not stated."""
+    years = [int(m.group(1)) for m in YEARS_PATTERN.finditer(text)]
+    return min(years) if years else None
+
+
+def is_new_grad(title: str, text: str) -> bool:
+    if EXCLUDE_TITLE_PATTERN.search(title):
+        return False
+    years = min_years_required(text)
+    if years is not None and years > MAX_YEARS_EXPERIENCE:
+        return False
+    # No explicit new grad wording: only accept if the posting states a low bar.
+    return bool(NEW_GRAD_PATTERN.search(title) or NEW_GRAD_PATTERN.search(text)) or years is not None
+
+
 # ---------- parsing ----------
 
 def parse_html(content: str | None) -> str:
@@ -89,11 +128,38 @@ def parse_html(content: str | None) -> str:
     return soup.get_text(separator=" ", strip=True)
 
 
+# ---------- notifications ----------
+
+def send_email(jobs: list[dict]) -> None:
+    """Emails a digest of new grad jobs to myself via Gmail SMTP """
+    sender = "fred.yuan392@gmail.com"
+    password = os.getenv("EMAIL_APP_PASSWORD")
+    recipient = "fred.yuan392@gmail.com"
+    #In the future, I will make it so that you can add youself to the recipient list
+    if not jobs:
+        return
+    if not sender or not password:
+        print("EMAIL_ADDRESS / EMAIL_APP_PASSWORD not set — skipping email")
+        return
+
+    msg = EmailMessage()
+    msg["Subject"] = f"{len(jobs)} new grad SWE job(s) — {date.today():%b %d}"
+    msg["From"] = sender
+    msg["To"] = recipient
+    msg.set_content("\n\n".join(f"{j['company']}: {j['title']}\n{j['url']}" for j in jobs))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(sender, password)
+        smtp.send_message(msg)
+    print(f"Emailed {len(jobs)} new grad job(s) to {recipient}")
+
+
 # ---------- main loop ----------
 
-def scrape_board(conn, token: str, patterns) -> tuple[int, int]:
-    """Returns (new_jobs, duplicate_jobs) for this board."""
+def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
+    """Returns (new_jobs, duplicate_jobs, new_grad_matches) for this board."""
     new, dupes = 0, 0
+    matches = []
     scraped_at = date.today()
 
     for job in fetch_company_jobs(token):
@@ -118,22 +184,27 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int]:
         if is_new:
             new += 1
             print(f"[{token}] new: {job['title']} ({len(keyword_pairs)} keywords)")
+            if is_new_grad(job["title"], text):
+                matches.append({"company": token, "title": job["title"], "url": job["absolute_url"]})
         else:
             dupes += 1
 
-    return new, dupes
+    return new, dupes, matches
 
 
 def main():
     patterns = build_patterns(load_keywords())
     conn = get_connection()
+    all_matches = []
     try:
         for token in BOARD_TOKENS:
-            new, dupes = scrape_board(conn, token, patterns)
-            print(f"[{token}] done: {new} new, {dupes} already stored")
+            new, dupes, matches = scrape_board(conn, token, patterns)
+            all_matches.extend(matches)
+            print(f"[{token}] done: {new} new, {dupes} already stored, {len(matches)} new grad")
             time.sleep(0.5)
     finally:
         conn.close()
+    send_email(all_matches)
 
 
 if __name__ == "__main__":
