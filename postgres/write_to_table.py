@@ -76,8 +76,18 @@ def check_table_data():
 
     conn.close()
 
+def check_scraper():
+    conn = psycopg2.connect(DATABASE_URL)
+    with conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT scraped_at, COUNT(*) FROM jobs GROUP BY scraped_at ORDER BY scraped_at DESC;")
+            rows = cursor.fetchall()
+            print("This is scraped_at", rows)
+
+    conn.close()
 if __name__ == "__main__":
     check_table_data()
+    check_scraper()
 
 
 
