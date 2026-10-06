@@ -12,14 +12,14 @@ def get_connection():
 
 
 def write_to_jobs_table(cursor, job_id, company, title, job_category,
-                        date_posted, scraped_at, url):
+                        date_posted, scraped_at, url, inUSA):
     
     cursor.execute("""
         INSERT INTO jobs (id, company, title, job_category, date_posted, scraped_at, url)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO NOTHING
         RETURNING id
-    """, (job_id, company, title, job_category, date_posted, scraped_at, url))
+    """, (job_id, company, title, job_category, date_posted, scraped_at, url, inUSA))
     return cursor.fetchone() is not None
 
 
@@ -36,13 +36,13 @@ def write_to_job_keywords_table(cursor, job_id, keyword_pairs):
 
 
 def write_to_tables(conn, job_id, company, title, job_category,
-                    date_posted, scraped_at, url, keyword_pairs):
+                    date_posted, scraped_at, url, keyword_pairs, inUSA):
 
     
     with conn:                          
         with conn.cursor() as cursor:   
             is_new = write_to_jobs_table(cursor, job_id, company, title,
-                                         job_category, date_posted, scraped_at, url)
+                                         job_category, date_posted, scraped_at, url, inUSA)
             if not is_new:
                 return False
             write_to_job_keywords_table(cursor, job_id, keyword_pairs)

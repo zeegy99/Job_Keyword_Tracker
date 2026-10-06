@@ -27,6 +27,7 @@ sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BOARD_TOKENS = ["stripe", "airbnb", "figma", "discord", "robinhood", "coinbase",
               "databricks", "datadog", "reddit", "SpaceX", "Carvana"]
+
 KEYWORDS_PATH = Path(__file__).resolve().parent / "software_keywords.json"
 JOB_CATEGORY = "Software Engineering"
 
@@ -60,7 +61,13 @@ YEARS_PATTERN = re.compile(
 )
 
 
+
 # ---------- fetching ----------
+def is_in_US(job):
+    for o in job.get("offices", []):
+        if o['name'] == 'US':
+            return True
+    return False
 
 def fetch_company_jobs(token: str) -> list[dict]:
     url = f"https://boards-api.greenhouse.io/v1/boards/{token}/jobs"
@@ -92,6 +99,7 @@ def build_patterns(keywords: dict[str, list[str]]) -> dict[str, tuple[str, re.Pa
             left = r"\b" if term[0].isalnum() else ""
             right = r"\b" if term[-1].isalnum() else ""
             patterns[term] = (category, re.compile(f"{left}{escaped}{right}", re.IGNORECASE))
+
     return patterns
 
 
@@ -173,6 +181,8 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
     scraped_at = date.today()
 
     for job in fetch_company_jobs(token):
+        in_US = is_in_US(job)
+            
         if not is_swe_title(job["title"]):
             continue
 
@@ -189,6 +199,7 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
             scraped_at=scraped_at,
             url=job["absolute_url"],
             keyword_pairs=keyword_pairs,
+            inUSA=in_US
         )
 
         if is_new:
@@ -209,6 +220,7 @@ def main():
     try:
         for token in BOARD_TOKENS:
             new, dupes, matches = scrape_board(conn, token, patterns)
+            return 1
             all_matches.extend(matches)
             print(f"[{token}] done: {new} new, {dupes} already stored, {len(matches)} new grad")
             time.sleep(0.5)
