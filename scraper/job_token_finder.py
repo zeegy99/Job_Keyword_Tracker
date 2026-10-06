@@ -1,7 +1,6 @@
 import requests
 
-candidates = ["airbnb", "figma", "discord", "robinhood", "coinbase",
-              "databricks", "datadog", "reddit"]
+candidates = ["amazon", "google", "meta", "nvidia", "crowe", "linkedin"]
 
 for token in candidates:
     r = requests.get(f"https://boards-api.greenhouse.io/v1/boards/{token}", timeout=10)

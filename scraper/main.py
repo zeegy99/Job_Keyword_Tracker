@@ -12,9 +12,11 @@ import time
 from datetime import date
 from email.message import EmailMessage
 from pathlib import Path
-
+from dotenv import load_dotenv
 import requests
 from bs4 import BeautifulSoup
+
+load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
@@ -24,7 +26,7 @@ from postgres.write_to_table import get_connection, write_to_tables
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BOARD_TOKENS = ["stripe", "airbnb", "figma", "discord", "robinhood", "coinbase",
-              "databricks", "datadog", "reddit"]
+              "databricks", "datadog", "reddit", "SpaceX", "Carvana"]
 KEYWORDS_PATH = Path(__file__).resolve().parent / "software_keywords.json"
 JOB_CATEGORY = "Software Engineering"
 
@@ -135,23 +137,31 @@ def send_email(jobs: list[dict]) -> None:
     sender = "fred.yuan392@gmail.com"
     password = os.getenv("EMAIL_APP_PASSWORD")
     recipient = "fred.yuan392@gmail.com"
-    #In the future, I will make it so that you can add youself to the recipient list
-    if not jobs:
-        return
+
     if not sender or not password:
-        print("EMAIL_ADDRESS / EMAIL_APP_PASSWORD not set — skipping email")
-        return
+            print("EMAIL_ADDRESS / EMAIL_APP_PASSWORD not set — skipping email")
+            return
+    #In the future, I will make it so that you can add youself to the recipient list
+
+    
+    
 
     msg = EmailMessage()
     msg["Subject"] = f"{len(jobs)} new grad SWE job(s) — {date.today():%b %d}"
     msg["From"] = sender
     msg["To"] = recipient
-    msg.set_content("\n\n".join(f"{j['company']}: {j['title']}\n{j['url']}" for j in jobs))
+
+    if not jobs:
+        print("No qualifying jobs found")
+        msg.set_content("No new jobs found today")
+    else:
+        msg.set_content("\n\n".join(f"{j['company']}: {j['title']}\n{j['url']}" for j in jobs))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
         smtp.login(sender, password)
         smtp.send_message(msg)
     print(f"Emailed {len(jobs)} new grad job(s) to {recipient}")
+
 
 
 # ---------- main loop ----------
