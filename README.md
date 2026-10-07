@@ -6,6 +6,7 @@ Using some regex, this is able to identify keywords in the job postings, compare
 
 Tools: Python, Regex, NLP, AWS, Postgres.
 
-[![Demo](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=MWzJ9iaVBps)
+[![Demo Video](https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg)](https://www.youtube.com/watch?v=MWzJ9iaVBps)
 
-![Keyword trends over time](docs/keyword_trends.png)
+And this shows some trends that I made in PowerBI
+![Keyword trends over time](docs/powerBi.png)
