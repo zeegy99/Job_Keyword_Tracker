@@ -15,7 +15,7 @@ def write_to_jobs_table(cursor, job_id, company, title, job_category,
                         date_posted, scraped_at, url, inUSA):
     
     cursor.execute("""
-        INSERT INTO jobs (id, company, title, job_category, date_posted, scraped_at, url)
+        INSERT INTO jobs (id, company, title, job_category, date_posted, scraped_at, url, inusa)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
         ON CONFLICT (id) DO NOTHING
         RETURNING id

@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from postgres.write_to_table import get_connection, write_to_tables
-
+from nlp_sifting.resume_keyword_finder import matches_my_skills
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BOARD_TOKENS = ["stripe", "airbnb", "figma", "discord", "robinhood", "coinbase",
@@ -178,6 +178,9 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
     """Returns (new_jobs, duplicate_jobs, new_grad_matches) for this board."""
     new, dupes = 0, 0
     matches = []
+    good_matches_for_zeg = []
+    keywords_matched = 0
+    total_keywords = 0
     scraped_at = date.today()
 
     for job in fetch_company_jobs(token):
@@ -201,6 +204,13 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
             keyword_pairs=keyword_pairs,
             inUSA=in_US
         )
+        for keyword_pair in keyword_pairs:
+            total_keywords += 1
+            keyword, category = keyword_pair
+            keywords_matched += matches_my_skills(category, keyword)
+        
+            if abs(keywords_matched - total_keywords) <= 2:
+                good_matches_for_zeg.append({"company": token, "title": job["title"], "url": job["absolute_url"]})
 
         if is_new:
             new += 1
@@ -210,7 +220,7 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
         else:
             dupes += 1
 
-    return new, dupes, matches
+    return new, dupes, good_matches_for_zeg
 
 
 def main():
@@ -220,7 +230,6 @@ def main():
     try:
         for token in BOARD_TOKENS:
             new, dupes, matches = scrape_board(conn, token, patterns)
-            return 1
             all_matches.extend(matches)
             print(f"[{token}] done: {new} new, {dupes} already stored, {len(matches)} new grad")
             time.sleep(0.5)

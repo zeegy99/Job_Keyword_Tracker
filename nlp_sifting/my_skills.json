@@ -1,8 +1,8 @@
 {
-  "languages": ["Python", "Java", "JavaScript","C++", "C#", "SQL"],
+  "languages": ["Python", "Java", "JavaScript","C++", "SQL"],
   "frameworks": ["React", "Node.js"],
   "databases": ["PostgreSQL", "MySQL"],
-  "infra": ["AWS"],
+  "infra": ["AWS", "Azure"],
   "testing": ["Jest", "JUnit", "PyTest", "TDD"],
   "practices": ["Microservices Architecture", "Distributed Systems", "Event-Driven", "CI/CD", "Code Reviews", "RESTful API"]
 }
