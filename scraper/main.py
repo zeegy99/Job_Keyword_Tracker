@@ -180,10 +180,11 @@ def scrape_board(conn, token: str, patterns) -> tuple[int, int, list[dict]]:
     matches = []
     good_matches_for_zeg = []
     keywords_matched = 0
-    total_keywords = 0
+    
     scraped_at = date.today()
 
     for job in fetch_company_jobs(token):
+        total_keywords = 0
         in_US = is_in_US(job)
             
         if not is_swe_title(job["title"]):
