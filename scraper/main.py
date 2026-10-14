@@ -22,7 +22,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.append(str(PROJECT_ROOT))
 
 from postgres.write_to_table import get_connection, write_to_tables
-from nlp_sifting.resume_keyword_finder import matches_my_skills
+from regex_based_sifting import matches_my_skills
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BOARD_TOKENS = ["stripe", "airbnb", "figma", "discord", "robinhood", "coinbase",
